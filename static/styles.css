@@ -1,0 +1,18 @@
+body{
+    background-color: aliceblue;
+}
+
+.form-style{
+    margin-top: 4rem;
+    border: 3px solid rgba(145, 188, 226, 0.568);
+    border-radius: 10px;
+    width: 30%;
+    
+}
+@media only screen and (max-width: 1200px) and (min-width:301px) {
+  
+    .form-style{
+  width: 80%;
+  
+  }
+}

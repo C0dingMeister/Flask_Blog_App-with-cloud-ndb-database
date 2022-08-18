@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}
+<title>Blog Posts</title>
+{% endblock %}
+
+{% block content %}
+
+{% if posts %}
+    {% for post in posts %}
+    <div class="container my-3">
+        <div class="card" style="width: 18rem;">
+            <div class="card-body">
+            <h5 class="card-title">{{post[0]}}</h5>
+            <p class="card-text">{{post[1]}}</p>
+            <h6>{{post[2]}}</h6>
+            </div>
+        </div>
+    </div>
+        
+  {% endfor %}
+{% else %}
+<h1 style="text-align: center;">Not a single blog posted today :(</h1>
+{% endif %}
+{% endblock %}
