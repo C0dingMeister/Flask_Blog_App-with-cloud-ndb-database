@@ -1,42 +1,31 @@
 {% extends "base.html" %}
 
 {% block title %}
-<title>Home</title>
+<title>Blog-My-BLogs</title>
 <style>
-  hr.style-eight {
-    overflow: visible; /* For IE */
-    padding: 0;
-    border: none;
-    border-top: medium double #333;
-    color: #333;
-    text-align: center;
-}
-hr.style-eight:after {
-    content: "§";
-    display: inline-block;
-    position: relative;
-    top: -0.7em;
-    font-size: 1.5em;
-    padding: 0 0.25em;
-    background: white;
-}
-
-div.card{
+    legend{
+        text-align: center;
+        font-family: cursive;
+        font-weight: 700;
+        font-size: xx-large;
+    }
+    div.card{
    
-    float: left;
-    width: 30%;
+   float: left;
+   width: 30%;
 }
 </style>
 {% endblock %}
 
+
+
 {% block content %}
-{% if blogs %}
-<h1 style="text-align: center;" class="mb-3">All blogs</h1>
-<hr class="style-eight">
 <div class="container">
+    <legend>Your Blogs</legend>
     {% for blog in blogs %}
     <div class="card text-center my-2 mx-3">
         <div class="card-header">
+            <a href="{{url_for('edit',id=blog.key.id(),title=blog.title,body=blog.body)}}"><button class="btn btn-warning btn-small">Edit</button></a>
             Author: {{blog.author}}
         </div>
         <div class="card-body">
@@ -46,14 +35,12 @@ div.card{
         </div>
         <div class="card-footer text-muted">
             {{blog.date}}
+            <form action="{{url_for('delete',id=blog.key.id())}}" method="post">
+            <button style="display: block; margin: auto" class="btn btn-danger btn-small" type="submit">Delete</button>
+        </form>
         </div>
     </div>
     {% endfor %}
+    
 </div>
-{% else %}
-<h1>No blogs posted yet</h1>
-{% endif %}
-
-
-
 {% endblock %}

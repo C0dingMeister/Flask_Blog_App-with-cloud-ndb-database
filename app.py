@@ -1,12 +1,13 @@
 ############-----------------------------------------------------------IMPORTS--------------------------------------------------------######
+
 import os
 from dotenv import load_dotenv
 import mock
-from flask import Flask, render_template, request,redirect,url_for,flash,session
+from flask import Flask, render_template, request,redirect,url_for,flash,session,abort
 import google.auth.credentials
 from google.cloud import ndb
 from datetime import datetime
-from forms import RegistrationForm,LoginForm 
+from forms import RegistrationForm,LoginForm,CreatePostForm 
 from flask_bcrypt import Bcrypt
 import uuid
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -39,55 +40,25 @@ app = Flask(__name__)
 load_dotenv()
 app.config['SECRET_KEY']=os.getenv('SECRET_KEY')
 bcrypt = Bcrypt(app)
-# login_manager = LoginManager(app)
 
 ############-----------------------------------------------------------ROUTES--------------------------------------------------------######
-
-# @login_manager.user_loader
-# def load_user(user_id):
-#     return User.get_by_id(user_id)
-
-
-
-@app.route("/")
-@app.route("/home")
-def index():
-    user = None
-    if 'username' in session:
-        user = session["username"]
-
-    # with client.context():
-    #     user = User.query(User.name=='player')
-    #     print(user.get().key.id())
-    #     print(uuid.uuid1())
-    return render_template('home.html', user=user)
-
-@app.route("/about")
-def about():
-    
-    return render_template('about.html')
 
 
 @app.route('/register',methods=['GET','POST'])
 def register():
-    # with client.context():
-    #     if current_user.is_authenticated:
-    #         return redirect(url_for('index'))
     form = RegistrationForm()
     if form.validate_on_submit():
         hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
-        with client.context():  
-            user_exist = User.query(User.name==form.name.data)
-            
-            print(user_exist.get())
-            if user_exist.get() is not None:
-                print("entering loop")
-                # for i in user_exist.iter():
-                    # print(i)
-                    # print("Username Already exists!!")
+        with client.context():
+           
+            if User.query(User.name==form.name.data).get() is not None:
+                
                 flash("Username already exists!!",'danger')
                 return redirect(url_for('register'))
-            
+            elif User.query(User.email==form.email.data).get() is not None:
+                flash("This Email is already registered!!","danger")
+                return redirect(url_for('register'))
+
             
             user = User(user_id=uuid.uuid4().hex,
             name=form.name.data, 
@@ -128,27 +99,84 @@ def logout():
     session.pop('username', None)
     return redirect(url_for('login'))
 
-@app.route('/posts')
-def posts():
+@app.route("/")
+@app.route("/home")
+def index():
+    user = None
+    if 'username' in session:
+        user = session["username"]
+    
     with client.context():
-        query = User.query()
-        posts = [(user.name,user.date) for user in query]
-        
-        return render_template('posts.html',posts=posts)
-@app.route('/upload',methods=['POST'])
-def upload():
-    # with client.context():
-    #     user_data = User(name=request.form['name'],
-    #                      email=request.form['article'],
-    #                      password=request.form['password'],
-    #                      date=datetime.now())
-    #     user_data.put()
-    name = request.form['name']
-    email = request.form['email']
-    print(f'''
-    {name}  {email}
-    ''')
+        blogs = Blog.query().iter()
+        return render_template('home.html', user=user,blogs=blogs)
+
+@app.route("/create",methods=['GET','POST'])
+def create():
+    if 'username' in session:
+        user = session["username"]
+        form=CreatePostForm()
+        if form.validate_on_submit():
+            print(form.title.data)
+            print(form.body.data)
+            with client.context():
+                post = Blog(title=form.title.data,
+                body=form.body.data, 
+                author=user,
+                date=datetime.now()
+                )
+                post.put()
+                flash("Your blog has been posted",'success')
+            return redirect(url_for('create'))
+        return render_template('create_posts.html',form=form,user=user)
+    flash("You need to be logged in to view this page","info")
+    return redirect(url_for("index"))
+
+
+@app.route('/myposts')
+def user_posts():
+    if 'username' in session:
+        user = session["username"]
+        with client.context():
+            blogs = Blog.query(Blog.author==user)
+
+            return render_template('myposts.html',user=user,blogs=blogs)
+
+    flash("You need to be logged in first","info")
     return redirect(url_for('index'))
+
+@app.route('/edit/<int:id>',methods=['GET','POST'])
+def edit(id):
+    if 'username' in session:
+        user = session["username"]
+        title = request.args.get('title')
+        body = request.args.get('body').rstrip()
+        
+        with client.context():
+            blog = Blog.get_by_id(id)
+            if blog.author != user:
+                return abort(403)
+            form=CreatePostForm()
+            
+            if form.validate_on_submit():
+                print(form.title.data)
+                print(form.body.data)
+                blog.title = form.title.data
+                blog.body = form.body.data
+                blog.put()
+                flash("Post updated","success")
+                return redirect(url_for('user_posts'))
+        return render_template('edit.html',user=user,form=form,title=title,body=body)
+            
+
+@app.route('/delete/<int:id>',methods=['POST'])
+def delete(id):
+    if 'username' in session:
+        user=session['username']
+        with client.context():
+            blog = Blog.get_by_id(id)
+            blog.key.delete()
+            flash("Post Deleted","success")
+        return redirect(url_for('user_posts'))
 
 
 if __name__ == '__main__':

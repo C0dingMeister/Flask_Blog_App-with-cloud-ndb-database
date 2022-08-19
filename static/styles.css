@@ -9,10 +9,20 @@ body{
     width: 30%;
     
 }
-@media only screen and (max-width: 1200px) and (min-width:301px) {
+.alert{
+    text-decoration: solid;
+    text-indent: 1%;
+    text-align: center;
+    margin: auto;
+    width: 30%;
+}
+@media only screen and (max-width: 1024px) and (min-width:301px) {
   
     .form-style{
   width: 80%;
-  
   }
+  .alert{
+    width: 80%;
 }
+}
+
